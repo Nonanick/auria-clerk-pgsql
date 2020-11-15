@@ -14,10 +14,10 @@ export const DeleteProcedure: Procedure.OfModel.IProcedure<
     }
 
     const model = request.model;
-    let deleteSQL = `DELETE FROM \`${request.entity.source}\` `;
+    let deleteSQL = `DELETE FROM "${request.entity.source}" `;
 
     // Filter by identifier
-    deleteSQL += ` WHERE \`${request.entity.identifier.name}\` = ?`;
+    deleteSQL += ` WHERE "${request.entity.identifier.name}" = $1`;
 
     try {
       let queryResponse = await archive.execute(

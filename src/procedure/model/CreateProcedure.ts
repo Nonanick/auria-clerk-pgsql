@@ -1,6 +1,4 @@
-import { AppError, Procedure } from 'auria-clerk';
-import { ComparableValues } from 'auria-clerk/dist/query/filter/FilterComparisson';
-
+import { AppError, Procedure, ComparableValues } from 'auria-clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
@@ -18,7 +16,7 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
     const model = request.model;
     const propertyNames: string[] = [];
     const propertyValues: ComparableValues[] = [];
-    let insertSQL = `INSERT INTO \`${request.entity.source}\` ( `;
+    let insertSQL = `INSERT INTO "${request.entity.source}" ( `;
 
     // Update state and fetch values
     let allValues = await model.$commit();
@@ -57,16 +55,17 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
       );
     }
 
+    let paramCounter = 1;
     // Build SQL
     insertSQL +=
       // (`prop1` , `prop2` , `prop3`)
       propertyNames
-        .map(f => `\`${f}\``)
+        .map(f => `"${f}"`)
         .join(' , ')
       + ' ) VALUES ( '
       // VALUES ( ? , ? , ?)
       + propertyValues
-        .map(f => ' ? ')
+        .map(f => ` $${paramCounter++} `)
         .join(' , ')
       + ')';
 
@@ -89,6 +88,7 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
       console.error('FAILED to insert model into mysql table!', err);
       return {
         request,
+        errors: err.detail,
         model: request.model,
         success: false,
         sql: insertSQL,

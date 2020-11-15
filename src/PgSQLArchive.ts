@@ -6,6 +6,7 @@ import {
   FilterComparison,
   ComparableValues,
   implementsFilterComparison,
+  isFilterComparisonArray,
   IFilterQuery
 } from 'auria-clerk';
 import { PropertyComparison } from 'auria-clerk/dist/property/comparison/PropertyComparison';
@@ -105,6 +106,7 @@ export class PgSQLArchive implements IArchive {
         response.addRows(...values.rows);
       }
     } catch (err) {
+      console.log('PgSQL Err', err);
       response.addErrors(err);
     }
     return response;
@@ -124,7 +126,7 @@ export class PgSQLArchive implements IArchive {
     if (request.properties.length > 0) {
 
       builtSQL += request.properties
-        .map(p => `\`${entityName}\`.\`${p}\``)
+        .map(p => `"${entityName}\"."${p}"`)
         .join(' , ');
 
     }
@@ -141,12 +143,12 @@ export class PgSQLArchive implements IArchive {
       builtSQL += allProps.length === 0
         ? '*'
         : allProps
-          .map(p => `\`${entityName}\`.\`${p}\``)
+          .map(p => `"${entityName}"."${p}"`)
           .join(',');
     }
 
     // Source
-    builtSQL += ` FROM \`${entityName}\` `;
+    builtSQL += ` FROM "${entityName}" `;
 
     // Filters ?
     if (request.hasFilter()) {
@@ -156,6 +158,7 @@ export class PgSQLArchive implements IArchive {
       for (let filterName in request.filters) {
         let filter = request.filters[filterName]!;
         let partialFilter = this.sqlFromFilter(filter, params);
+
         if (Array.isArray(partialFilter)) {
           filters.push(...partialFilter);
         } else {
@@ -198,10 +201,12 @@ export class PgSQLArchive implements IArchive {
   parseNamedAttributes(query: string, namedParams: { [name: string]: ComparableValues; }): GeneratedQuerySQL {
     let matches = query.match(/:\[.*?\]/g);
     if (matches != null) {
+      let paramCount = 1;
       let params: ComparableValues[] = [];
       for (let p of matches) {
         let paramName = p.slice(2, -1);
-        query = query.replace(p, '?');
+        query = query.replace(p, '$' + paramCount);
+        paramCount++;
         params.push(namedParams[paramName]);
       }
       return {
@@ -232,9 +237,7 @@ export class PgSQLArchive implements IArchive {
     filter: IFilterQuery | FilterComparison | FilterComparison[],
     params: { [name: string]: ComparableValues; }
   ): string | string[] {
-
-    // Handle array of FilterComparison
-    if (Array.isArray(filter)) {
+    if (Array.isArray(filter) && !isFilterComparisonArray(filter)) {
       return filter
         .map(f => this.sqlFromFilter(f, params));
     }
@@ -242,37 +245,57 @@ export class PgSQLArchive implements IArchive {
     // Handle FilterComparison
     if (implementsFilterComparison(filter)) {
 
-      // random name -> make it hard to collide parameters names
-      //let paramName = this._paramNameGenerator();
-
-      let nonce = 0;
-
-      // Instead of a random param name use source + property so the connection can cache the query
-      let paramName = `${filter.source != null ? String(filter.source) : ''}${filter.property}`;
-      while (params[paramName + nonce] != null) {
-        nonce++;
+      if (Array.isArray(filter)) {
+        filter = {
+          property: filter[0],
+          comparison: filter[1],
+          value: filter[2]
+        };
       }
-      // nonce will make sure that we avoid collisions of the same property from the same source
-      // being compared more than once
 
-      // Add parameter value to global parameter map
-      params[paramName + nonce] = filter.value;
+      let filterSource = filter.source != null
+        // Source
+        ? '"' + filter.source + '".'
+        : '';
+
+      let filterValue: string;
+
+
+      // Handle value as array differently
+      if (Array.isArray(filter.value)) {
+        let nonce = 0;
+        let paramName = `${filter.source != null ? String(filter.source) : ''}${filter.property}`;
+        while (params[paramName + nonce] != null) {
+          nonce++;
+        }
+        const values: string[] = [];
+        for (let val of filter.value) {
+          params[paramName + nonce] = val;
+          values.push(` :[${paramName + nonce}] `);
+          nonce++;
+        }
+        filterValue = '( ' + values.join(',') + ' )';
+      } else {
+        let nonce = 0;
+        let paramName = `${filter.source != null ? String(filter.source) : ''}${filter.property}`;
+        while (params[paramName + nonce] != null) {
+          nonce++;
+        }
+        params[paramName + nonce] = filter.value;
+        filterValue = ` :[${paramName + nonce}] `;
+      }
+
+      let cmp = this.resolveComparison(filter.comparison);
 
       return (
+        filterSource
+        // Property name
+        + ' "' + filter.property + '" '
+        // Comparator
+        + (cmp === 'is' ? 'IS NULL' : cmp)
 
-        filter.source != null
-          // Source
-          ? '`' + filter.source + '`.'
-          : ''
-
-          // Property name
-          + ' `' + filter.property + '` '
-
-          // Comparator
-          + this.resolveComparison(filter.comparison)
-
-          // Value placeholder
-          + ` :[${paramName + nonce}] `
+        // Value placeholder
+        + (cmp === 'is' ? '' : filterValue)
       );
     }
 
@@ -284,15 +307,11 @@ export class PgSQLArchive implements IArchive {
       let f = filter[name]!;
       let filtered: string | string[] = this.sqlFromFilter(f, params);
 
-      if (typeof filtered === 'string') {
-        filtered = [filtered];
-      }
-
       if (name === '$or') {
         filters.push(
-          (filtered as string[])
+          '( ' + (filtered as string[])
             .map(f => `(${f})`)
-            .join(' OR ')
+            .join(' OR ') + ' )'
         );
       } else if (name === '$not') {
         filters.push(
@@ -327,6 +346,8 @@ export class PgSQLArchive implements IArchive {
       case '=':
       case '==':
         return '=';
+      case "is":
+        return "is";
       // not equal
       case 'neq':
       case 'not equal':

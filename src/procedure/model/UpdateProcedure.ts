@@ -16,7 +16,7 @@ export const UpdateProcedure: Procedure.OfModel.IProcedure<
     const model = request.model;
     const propertyNames: string[] = request.model.$changedProperties();
     const propertyValues: ComparableValues[] = [];
-    let updateSQL = `UPDATE \`${request.entity.source}\` SET `;
+    let updateSQL = `UPDATE "${request.entity.source}" SET `;
 
     // Update state and fetch values
     let allValues = await model.$commit();
@@ -42,15 +42,16 @@ export const UpdateProcedure: Procedure.OfModel.IProcedure<
       );
     }
 
+    let paramCounter = 1;
     // Build SQL
     updateSQL +=
       // SET `a` = ? , `b` = ?
       propertyNames
-        .map(f => `\`${f}\` = ?`)
+        .map(f => `\`${f}\` = $${paramCounter++}`)
         .join(' , ');
 
     // Filter by identifier
-    updateSQL += ` WHERE \`${request.entity.identifier.name}\` = ?`;
+    updateSQL += ` WHERE \`${request.entity.identifier.name}\` = $${paramCounter++}`;
     // Add to parameters
     propertyValues.push(await model.$id());
 
