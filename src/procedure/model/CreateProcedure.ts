@@ -85,7 +85,6 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
       };
 
     } catch (err) {
-      console.error('FAILED to insert model into mysql table!', err);
       return {
         request,
         errors: err.detail,

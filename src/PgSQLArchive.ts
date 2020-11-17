@@ -15,6 +15,7 @@ import { QueryResponse } from 'auria-clerk/dist/query/QueryResponse';
 import { Pool, PoolClient } from 'pg';
 import { Transaction } from './transaction/Transaction';
 import { ConnectionInfo } from './connection/ConnectionInfo';
+import { QueryParser } from './QueryParser';
 
 export class PgSQLArchive implements IArchive {
 
@@ -83,17 +84,11 @@ export class PgSQLArchive implements IArchive {
   }
 
   async query(request: QueryRequest): MaybePromise<QueryResponse> {
-    let sql = this.requestToSQL(request);
+
+    let query = new QueryParser(request);
+    let sql = query.parse();
 
     let conn = await this.connection();
-
-    console.log(
-      'Will now run query',
-      sql.query,
-      'with params',
-      sql.params
-    );
-
     let response = new QueryResponse(request);
 
     try {
@@ -106,10 +101,10 @@ export class PgSQLArchive implements IArchive {
         response.addRows(...values.rows);
       }
     } catch (err) {
-      console.log('PgSQL Err', err);
       response.addErrors(err);
+    } finally {
+      return response;
     }
-    return response;
 
   }
 
