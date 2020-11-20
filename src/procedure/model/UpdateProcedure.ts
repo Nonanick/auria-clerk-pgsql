@@ -3,11 +3,10 @@ import { PgSQLArchive } from "../../PgSQLArchive";
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
 export const UpdateProcedure: Procedure.OfModel.IProcedure<
-  Procedure.OfModel.IContext,
   IPgSQLModelProcedureResponse
 > = {
   name: 'update',
-  async execute(archive, request) {
+  async execute(archive, request, context) {
 
     if (!(archive instanceof PgSQLArchive)) {
       return new Error('Create procedure expects an MysqlArchive!');
@@ -67,6 +66,7 @@ export const UpdateProcedure: Procedure.OfModel.IProcedure<
       );
 
       return {
+        procedure: request.procedure,
         request,
         model: request.model,
         success: true,
@@ -77,6 +77,7 @@ export const UpdateProcedure: Procedure.OfModel.IProcedure<
     } catch (err) {
       console.error('FAILED to update model using SQL query ',);
       return {
+        procedure: request.procedure,
         request,
         model: request.model,
         success: false,

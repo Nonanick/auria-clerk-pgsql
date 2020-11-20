@@ -3,11 +3,10 @@ import { PgSQLArchive } from '../../PgSQLArchive';
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
 export const CreateProcedure: Procedure.OfModel.IProcedure<
-  Procedure.OfModel.IContext,
   IPgSQLModelProcedureResponse
 > = {
   name: 'create',
-  async execute(archive, request) {
+  async execute(archive, request, context) {
 
     if (!(archive instanceof PgSQLArchive)) {
       return new Error('Create procedure expects an PgSQL Archive!');
@@ -77,6 +76,7 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
       );
 
       return {
+        procedure: request.procedure,
         request,
         model: request.model,
         success: queryResponse.rowCount == 1,
@@ -86,6 +86,7 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
 
     } catch (err) {
       return {
+        procedure: request.procedure,
         request,
         errors: err.detail,
         model: request.model,

@@ -1,13 +1,13 @@
 import {
-  IFilterQuery,
-  Procedure,
-  MaybePromise,
-  ComparableValues
+  ComparableValues, IFilterQuery,
+
+  MaybePromise, Procedure
 } from 'auria-clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
+import { FilterParser } from '../../query/FilterParser';
 import { IPgSQLEntityProcedureResponse } from './IPgSQLEntityProcedureResponse';
 
-export const BatchUpdate: Procedure.OfEntity.IProcedure<BatchUpdateContext> = {
+export const BatchUpdate: Procedure.OfEntity.IProcedure = {
   name: 'batch-update',
   async execute(archive, request) {
 
@@ -27,8 +27,8 @@ export const BatchUpdate: Procedure.OfEntity.IProcedure<BatchUpdateContext> = {
     updateSQL += ' SET ' + updateProperties.join(' , ');
 
     let whereParams: { [name: string]: ComparableValues; } = {};
-    let whereQuery = archive.sqlFromFilter(request.context.filter, whereParams);
-    let parsedWhere = archive.parseNamedAttributes(whereQuery, whereParams);
+    let whereQuery = FilterParser.ParseAll(request.context.filter, whereParams);
+    let parsedWhere = FilterParser.ParseNamedAttributes(whereQuery, whereParams);
     updateSQL += ' WHERE ' + parsedWhere.query;
     bindParams.push(...parsedWhere.params);
 
@@ -37,7 +37,8 @@ export const BatchUpdate: Procedure.OfEntity.IProcedure<BatchUpdateContext> = {
     let result = batchUpdateResponse;
 
     return {
-      bindedParams: bindParams,
+      procedure: this.name,
+      bondedParams: bindParams,
       sql: updateSQL,
       success: result.rowCount > 0,
       request: request,

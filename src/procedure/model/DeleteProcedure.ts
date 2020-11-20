@@ -3,11 +3,10 @@ import { PgSQLArchive } from "../../PgSQLArchive";
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
 export const DeleteProcedure: Procedure.OfModel.IProcedure<
-  Procedure.OfModel.IContext,
   IPgSQLModelProcedureResponse
 > = {
   name: 'delete',
-  async execute(archive, request) {
+  async execute(archive, request, context) {
 
     if (!(archive instanceof PgSQLArchive)) {
       return new Error('Create procedure expects an PgSQL!');
@@ -26,6 +25,7 @@ export const DeleteProcedure: Procedure.OfModel.IProcedure<
       );
 
       return {
+        procedure: request.procedure,
         request,
         model: request.model,
         success: true,
@@ -36,6 +36,7 @@ export const DeleteProcedure: Procedure.OfModel.IProcedure<
     } catch (err) {
       console.error('FAILED to delete model using SQL query ', deleteSQL);
       return {
+        procedure: request.procedure,
         request,
         model: request.model,
         success: false,
