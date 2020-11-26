@@ -68,33 +68,33 @@ export const CreateProcedure: Procedure.OfModel.IProcedure<
         .join(' , ')
       + ')';
 
-    try {
 
-      let queryResponse = await archive.execute(
-        insertSQL,
-        propertyValues
-      );
+    return archive.execute(
+      insertSQL,
+      propertyValues
+    )
+      .then(queryResponse => {
+        return {
+          procedure: request.procedure,
+          request,
+          model: request.model,
+          success: queryResponse.rowCount == 1,
+          sql: insertSQL,
+          bindParams: propertyValues,
 
-      return {
-        procedure: request.procedure,
-        request,
-        model: request.model,
-        success: queryResponse.rowCount == 1,
-        sql: insertSQL,
-        bindParams: propertyValues,
-      };
-
-    } catch (err) {
-      return {
-        procedure: request.procedure,
-        request,
-        errors: err.detail,
-        model: request.model,
-        success: false,
-        sql: insertSQL,
-        bindParams: propertyValues
-      };
-    }
-
+        };
+      })
+      .catch(err => {
+        console.log('Error in PG', err.detail);
+        return {
+          procedure: request.procedure,
+          request,
+          errors: err.detail,
+          model: request.model,
+          success: false,
+          sql: insertSQL,
+          bindParams: propertyValues
+        };
+      });
   }
 };

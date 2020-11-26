@@ -5,16 +5,13 @@ import {
   Procedure,
   QueryRequest
 } from 'auria-clerk';
-import { IEntityProcedureRequest } from 'auria-clerk/dist/procedure/entity/IEntityProcedureRequest';
-import { IEntityProcedureResponse } from 'auria-clerk/dist/procedure/entity/IEntityProcedureResponse';
-import { IModelProcedureRequest } from 'auria-clerk/dist/procedure/model/IModelProcedureRequest';
-import { IModelProcedureResponse } from 'auria-clerk/dist/procedure/model/IModelProcedureResponse';
 import { QueryResponse } from 'auria-clerk/dist/query/QueryResponse';
 import { Pool, PoolClient } from 'pg';
 import { ConnectionInfo } from './connection/ConnectionInfo';
+import { BatchUpdate } from './procedure/entity';
+import { Create, Delete, Update } from './procedure/model';
 import { QueryParser } from './query/QueryParser';
 import { Transaction } from './transaction/Transaction';
-
 
 export class PgSQLArchive extends Archive {
 
@@ -26,6 +23,9 @@ export class PgSQLArchive extends Archive {
   constructor(connectionInfo: ConnectionInfo) {
     super();
     this._connectionInfo = connectionInfo;
+
+    this.addModelProcedure(Create, Update, Delete);
+    this.addEntityProcedure(BatchUpdate);
   }
 
   async connect() {
@@ -57,6 +57,11 @@ export class PgSQLArchive extends Archive {
     let sql = query.parse();
 
     let conn = await this.connection();
+
+    conn.on('error', (err, cl) => {
+      console.error('Error on Pg!', err.name, err.message);
+    });
+
     let response = new QueryResponse<T>(request);
 
     try {
