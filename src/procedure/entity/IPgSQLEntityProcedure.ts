@@ -1,11 +1,11 @@
 
-import { IArchive, MaybePromise, Procedure } from 'auria-clerk';
+import { IArchive, IEntityProcedure, IEntityProcedureRequest, MaybePromise } from 'auria-clerk';
 import { IPgSQLEntityProcedureResponse } from './IPgSQLEntityProcedureResponse';
 
 export interface IPgSQLEntityProcedure
-  extends Procedure.OfEntity.IProcedure {
+  extends IEntityProcedure {
   execute: (
     archive: IArchive,
-    request: Procedure.OfEntity.IRequest
+    request: IEntityProcedureRequest
   ) => MaybePromise<IPgSQLEntityProcedureResponse>;
 }

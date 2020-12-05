@@ -1,8 +1,8 @@
-import { AppError, Procedure, ComparableValues } from 'auria-clerk';
+import { AppError, ComparableValues, IModelProcedure } from 'auria-clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
-export const CreateProcedure: Procedure.OfModel.IProcedure<
+export const CreateProcedure: IModelProcedure<
   IPgSQLModelProcedureResponse
 > = {
   name: 'create',

@@ -1,8 +1,8 @@
-import { Procedure } from 'auria-clerk';
+import { IModelProcedure } from 'auria-clerk';
 import { PgSQLArchive } from "../../PgSQLArchive";
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
-export const DeleteProcedure: Procedure.OfModel.IProcedure<
+export const DeleteProcedure: IModelProcedure<
   IPgSQLModelProcedureResponse
 > = {
   name: 'delete',

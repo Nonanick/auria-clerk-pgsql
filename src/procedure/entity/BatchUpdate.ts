@@ -1,13 +1,9 @@
-import {
-  ComparableValues, IFilterQuery,
-
-  MaybePromise, Procedure
-} from 'auria-clerk';
+import { ComparableValues, IEntityProcedure, IEntityProcedureContext, IFilterQuery, MaybePromise, } from 'auria-clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
 import { FilterParser } from '../../query/FilterParser';
 import { IPgSQLEntityProcedureResponse } from './IPgSQLEntityProcedureResponse';
 
-export const BatchUpdate: Procedure.OfEntity.IProcedure = {
+export const BatchUpdate: IEntityProcedure = {
   name: 'batch-update',
   async execute(archive, request) {
 
@@ -47,7 +43,7 @@ export const BatchUpdate: Procedure.OfEntity.IProcedure = {
 };
 
 
-export interface BatchUpdateContext extends Procedure.OfEntity.IContext {
+export interface BatchUpdateContext extends IEntityProcedureContext {
   values: any;
   filter: IFilterQuery;
 };

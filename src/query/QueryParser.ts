@@ -1,4 +1,4 @@
-import { ComparableValues, QueryRequest } from "auria-clerk";
+import { ComparableValues, IPropertyRelation, QueryRequest } from "auria-clerk";
 import { FilterParser } from "./FilterParser";
 
 export class QueryParser {
@@ -30,6 +30,15 @@ export class QueryParser {
       builtSQL += this.parseFilters();
     }
 
+    // Include / Joins
+    if (this._request.hasIncludes()) {
+      builtSQL += (
+        this._request.hasFilter()
+          ? ' AND '
+          : ' WHERE '
+      ) + this.parseIncludeFilter();
+    }
+
     // Order By
     if (this._request.hasOrder()) {
       builtSQL += this.parseOrder();
@@ -41,15 +50,35 @@ export class QueryParser {
       builtSQL += this._request.limit.offset != null ? ' OFFSET ' + this._request.limit.offset : '';
     }
 
+
     let parsedQuery = FilterParser.ParseNamedAttributes(builtSQL, this._parameterValues);
+    // console.debug('Parsed Query -> ', parsedQuery);
 
     return parsedQuery;
 
   }
 
   parseSource() {
-    let entityName = this._request.source;
-    return ` FROM "${entityName}" `;
+
+    let entityName = `"${this._request.source}"`;
+
+    // Will join any table?
+    if (this._request.includes.length > 0) {
+      for (let includedProp of this._request.includes) {
+        let relation = this._request.entity.properties[includedProp].getRelation();
+        if (relation == null) {
+          continue;
+        }
+
+        // Only bring as join one-one or 'many-one' related data
+        if (relation.type === 'one-to-one' || relation.type === 'many-to-one') {
+          let source = relation.entity.source != null ? relation.entity.source : relation.entity.name;
+          entityName += ` , "${source}"`;
+        }
+      }
+    }
+
+    return ` FROM ${entityName} `;
   }
 
   parseColumns() {
@@ -76,21 +105,64 @@ export class QueryParser {
       }
       // if no property exists use '*'
       parsedColumns += allProps.length === 0
-        ? '*'
+        ? '"' + entityName + '"."*"'
         : allProps
           .map(p => `"${entityName}"."${p}"`)
           .join(',');
     }
 
+    // Will join any table?
+    if (this._request.includes.length > 0) {
+      for (let includedProp of this._request.includes) {
+        let relation = this._request.entity.properties[includedProp].getRelation();
+        if (relation == null) {
+          continue;
+        }
+
+        // Only bring as join one-one or 'many-one' related data
+        if (relation.type === 'one-to-one' || relation.type === 'many-to-one') {
+          parsedColumns += ", " + this.parseRelationColumns(includedProp, relation);
+        }
+      }
+    }
+
     return parsedColumns;
   }
 
-  parseFilters() {
+  parseRelationColumns(property: string, relation: IPropertyRelation) {
 
-    return FilterParser.ParseAll(this._request.filters, this._parameterValues);
+    let entity = relation.entity;
+    let source = entity.source != null ? entity.source : entity.name;
+
+    // specified which columns to return?
+    if (relation.returning != null && relation.returning.length > 0) {
+      return relation.returning
+        .map(propName => {
+          return `"${source}"."${propName}" as "related_to_${property}_${propName}"`;
+        }).join(' , ');
+    }
+
+    // if not specified get all public
+    let publicProperties: string[] = [];
+    for (let propName in entity.properties) {
+      let prop = entity.properties[propName];
+      if (prop.private !== true) {
+        publicProperties.push(`"${source}"."${propName}"  as "related_to_${property}_${propName}"`);
+      }
+    }
+
+    // if no public properties, return all?
+    if (publicProperties.length > 0) {
+      return publicProperties.join(' , ');
+    } else {
+      return `"${source}"."*"`;
+    }
+
   }
 
-
+  parseFilters() {
+    return FilterParser.ParseAll(this._request.filters, this._parameterValues);
+  }
 
   parseOrder() {
 
@@ -116,6 +188,27 @@ export class QueryParser {
     }
 
     return orderingSQL;
+  }
+
+  parseIncludeFilter() {
+
+    let includeFilters: string[] = [];
+
+    for (let includedProp of this._request.includes) {
+
+      let prop = this._request.entity.properties[includedProp]!;
+
+      let relatedProp = prop.getRelation()?.property!;
+      let relatedEnt = prop.getRelation()?.entity!;
+      let relatedSource = relatedEnt?.source != null ? relatedEnt.source : relatedEnt.name;
+
+      includeFilters.push(
+        `"${this._request.entity.source}"."${includedProp}" = "${relatedSource}"."${relatedProp}"`
+      );
+    }
+
+    return includeFilters.join(' AND ');
+
   }
 
 

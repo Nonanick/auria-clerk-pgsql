@@ -2,8 +2,8 @@ import {
   ComparableValues,
   Archive,
   MaybePromise,
-  Procedure,
-  QueryRequest
+  QueryRequest,
+  IOrderBy
 } from 'auria-clerk';
 import { QueryResponse } from 'auria-clerk/dist/query/QueryResponse';
 import { Pool, PoolClient } from 'pg';
@@ -37,6 +37,9 @@ export class PgSQLArchive extends Archive {
 
     if (this._pgConn == null) {
       await this.connect();
+      this._pgConn!.on('error', (err, cl) => {
+        console.error('Error on PgSQL!', err.name, err.message);
+      });
     }
 
     return this._pgConn!;
@@ -58,9 +61,6 @@ export class PgSQLArchive extends Archive {
 
     let conn = await this.connection();
 
-    conn.on('error', (err, cl) => {
-      console.error('Error on Pg!', err.name, err.message);
-    });
 
     let response = new QueryResponse<T>(request);
 
@@ -71,14 +71,141 @@ export class PgSQLArchive extends Archive {
       );
 
       if (Array.isArray(values.rows)) {
-        response.addRows(...values.rows);
+
+        let rows: any[] = [];
+
+        if (request.hasIncludes()) {
+          rows = this.arrangeIncludedProperties(request, values.rows);
+          rows = await this.fetchChildRows(request, rows);
+        } else {
+          rows = values.rows;
+        }
+
+        response.addRows(...rows);
       }
     } catch (err) {
+      console.error('Failed to query PostgresSQL!', err);
       response.addErrors(err);
     } finally {
       return response;
     }
 
+  }
+
+  protected arrangeIncludedProperties(request: QueryRequest<any>, values: any[]) {
+
+    for (let includedProp of request.includes) {
+
+      let relation = request.entity.properties[includedProp]?.getRelation();
+      if (relation!.type !== 'one-to-one' && relation!.type !== 'many-to-one') {
+        continue;
+      }
+
+      let baseName = `related_to_${includedProp}_`;
+      let newValues = values.map(row => {
+        let newRow = { ...row };
+
+        for (let rowPropertyName in row) {
+          if (rowPropertyName.indexOf(baseName) === 0) {
+
+            let newName = rowPropertyName.replace(baseName, '');
+            let value = row[rowPropertyName];
+            delete newRow[rowPropertyName];
+
+            if (typeof newRow[includedProp] !== 'object') {
+              newRow[includedProp] = {};
+            }
+
+            newRow[includedProp][newName] = value;
+          }
+        }
+
+        return newRow;
+      });
+
+      values = newValues;
+    }
+    return values;
+  }
+
+  protected async fetchChildRows(request: QueryRequest<any>, values: any[]) {
+
+    for (let includedProp of request.includes) {
+
+      let relation = request.entity.properties[includedProp]?.getRelation();
+      if (relation == null) {
+        continue;
+      }
+
+      // Fetch child rows applies only for many-to-one relations
+      if (relation.type !== 'many-to-one') {
+        continue;
+      }
+
+      let store = request.entity.store();
+      let childRequest = new QueryRequest(store.entity(relation.entity.name)!);
+      let ordering: IOrderBy[] = [
+        {
+          property: relation?.property!,
+          direction: 'asc'
+        }
+      ];
+
+      if (relation.order != null) {
+        if (Array.isArray(relation.order)) {
+          ordering.push(...relation.order);
+        } else {
+          ordering.push(relation.order);
+        }
+      }
+
+      // Query for children whose parent was queried in the main query
+      childRequest.loadQueryRequest({
+        properties: relation?.returning,
+        order: ordering,
+        filters: {
+          ...relation?.filters ?? {},
+          'included-in-previous': [relation?.property!, 'included in', values.map(m => {
+            return m[includedProp];
+          })]
+        },
+      });
+
+      const childRows = await childRequest.fetch();
+      if (childRows instanceof Error || childRows == null) {
+        console.error('Failed to fetch associated child of property ', includedProp);
+        return values;
+      }
+
+      const placeInRowAt: {
+        [index: number]: any;
+      } = {};
+
+      // Associate children to parent index
+      for (let index = 0; index <= childRows.length; index++) {
+        let child = childRows[index];
+        for (let row of values) {
+
+          if (child[relation.property] === row[includedProp]) {
+            // Initialize array
+            if (!Array.isArray(placeInRowAt[index])) placeInRowAt[index] = [];
+
+            placeInRowAt[index].push(row);
+            // Found its parent? stop!
+            break;
+          }
+        }
+      }
+
+      for (let index in placeInRowAt) {
+        values[index][includedProp] = placeInRowAt[index];
+      }
+
+      console.log('Associated children: ', childRows);
+
+    }
+
+    return values;
   }
 
   transaction(): Transaction {

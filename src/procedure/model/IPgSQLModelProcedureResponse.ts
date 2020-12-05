@@ -1,6 +1,6 @@
-import { Procedure } from 'auria-clerk';
+import { IProcedureResponse } from 'auria-clerk';
 
-export interface IPgSQLModelProcedureResponse extends Procedure.OfModel.IResponse {
+export interface IPgSQLModelProcedureResponse extends IProcedureResponse {
   sql: string;
   bindParams: any[];
 }

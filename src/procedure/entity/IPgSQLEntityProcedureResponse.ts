@@ -1,8 +1,8 @@
-import { Procedure } from 'auria-clerk';
+import { IEntityProcedureRequest, IEntityProcedureResponse, } from 'auria-clerk';
 
-export interface IPgSQLEntityProcedureResponse extends Procedure.OfEntity.IResponse {
+export interface IPgSQLEntityProcedureResponse extends IEntityProcedureResponse {
   success: boolean;
-  request: Procedure.OfEntity.IRequest;
+  request: IEntityProcedureRequest;
   sql: string;
   bindedParams: any[];
 }
