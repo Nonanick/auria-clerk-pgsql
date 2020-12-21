@@ -20,6 +20,9 @@ export class PgSQLArchive extends Archive {
   protected _pgConn?: Pool;
   protected _client?: PoolClient;
 
+  get database(): string {
+    return this._connectionInfo.database ?? '';
+  }
   constructor(connectionInfo: ConnectionInfo) {
     super();
     this._connectionInfo = connectionInfo;
@@ -29,7 +32,11 @@ export class PgSQLArchive extends Archive {
   }
 
   async connect() {
-    this._pgConn = new Pool(this._connectionInfo);
+    this._pgConn = new Pool(
+      {
+        ...this._connectionInfo,
+        ssl: false,
+      });
     return this._pgConn;
   }
 
@@ -60,7 +67,6 @@ export class PgSQLArchive extends Archive {
     let sql = query.parse();
 
     let conn = await this.connection();
-
 
     let response = new QueryResponse<T>(request);
 
