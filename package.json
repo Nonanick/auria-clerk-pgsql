@@ -1,13 +1,12 @@
 {
-  "name": "auria-clerk-pgsql",
+  "name": "clerk-pgsql",
   "version": "0.0.1",
-  "description": "Auria Clerk - PostgreSQL archive",
+  "description": "Clerk - PostgreSQL archive",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "Auria",
     "Clerk",
     "PostgreSQL",
     "Archive"
