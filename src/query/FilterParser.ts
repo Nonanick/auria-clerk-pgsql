@@ -1,5 +1,4 @@
-import { ComparableValues, FilterComparison, IFilterQuery, implementsFilterComparison, isFilterComparisonArray } from "clerk";
-import { PropertyComparison } from '../../../auria-clerk/dist/Clerk';
+import { ComparableValues, FilterComparison, IFilterQuery, implementsFilterComparison, isFilterComparisonArray, PropertyComparison } from "clerk";
 import { GeneratedQuerySQL } from "../PgSQLArchive";
 
 type FilterParams = {
