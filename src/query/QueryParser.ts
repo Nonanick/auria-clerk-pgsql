@@ -3,7 +3,7 @@ import {
   getAsIProperty,
   IPropertyRelation,
   QueryRequest,
-} from "auria-clerk";
+} from "clerk";
 import { FilterParser } from "./FilterParser";
 
 export class QueryParser {

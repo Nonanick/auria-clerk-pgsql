@@ -1,4 +1,4 @@
-import { IProcedureResponse } from 'auria-clerk';
+import { IProcedureResponse } from 'clerk';
 
 export interface IPgSQLModelProcedureResponse extends IProcedureResponse {
   sql: string;

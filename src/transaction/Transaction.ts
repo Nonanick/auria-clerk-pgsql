@@ -1,4 +1,4 @@
-import { AppException, ComparableValues, MaybePromise } from 'auria-clerk';
+import { AppException, ComparableValues, MaybePromise } from 'clerk';
 import { PoolClient } from 'pg';
 import { PgSQLArchive } from '../PgSQLArchive';
 

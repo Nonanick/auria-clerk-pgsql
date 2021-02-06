@@ -1,4 +1,4 @@
-import { IEntityProcedureRequest, IEntityProcedureResponse, } from 'auria-clerk';
+import { IEntityProcedureRequest, IEntityProcedureResponse, } from 'clerk';
 
 export interface IPgSQLEntityProcedureResponse extends IEntityProcedureResponse {
   success: boolean;

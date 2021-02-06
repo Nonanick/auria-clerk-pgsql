@@ -1,5 +1,5 @@
 
-import { IArchive, IEntityProcedure, IEntityProcedureRequest, MaybePromise } from 'auria-clerk';
+import { IArchive, IEntityProcedure, IEntityProcedureRequest, MaybePromise } from 'clerk';
 import { IPgSQLEntityProcedureResponse } from './IPgSQLEntityProcedureResponse';
 
 export interface IPgSQLEntityProcedure

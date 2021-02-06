@@ -1,4 +1,4 @@
-import { ComparableValues, IEntityProcedure, IEntityProcedureContext, IFilterQuery, MaybePromise, } from 'auria-clerk';
+import { ComparableValues, IEntityProcedure, IEntityProcedureContext, IFilterQuery, MaybePromise, } from 'clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
 import { FilterParser } from '../../query/FilterParser';
 import { IPgSQLEntityProcedureResponse } from './IPgSQLEntityProcedureResponse';
@@ -48,7 +48,7 @@ export interface BatchUpdateContext extends IEntityProcedureContext {
   filter: IFilterQuery;
 };
 
-declare module 'auria-clerk' {
+declare module 'clerk' {
   interface Entity {
     execute(procedure: 'batch-update', context: BatchUpdateContext): MaybePromise<IPgSQLEntityProcedureResponse>;
   }

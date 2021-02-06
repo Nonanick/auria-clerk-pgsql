@@ -4,8 +4,8 @@ import {
   MaybePromise,
   QueryRequest,
   IOrderBy
-} from 'auria-clerk';
-import { QueryResponse } from 'auria-clerk/dist/query/QueryResponse';
+} from 'clerk';
+import { QueryResponse } from 'clerk/dist/query/QueryResponse';
 import { Pool, PoolClient } from 'pg';
 import { ConnectionInfo } from './connection/ConnectionInfo';
 import { BatchUpdate } from './procedure/entity';

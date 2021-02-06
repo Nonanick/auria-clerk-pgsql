@@ -1,4 +1,4 @@
-import { IModelProcedure } from 'auria-clerk';
+import { IModelProcedure } from 'clerk';
 import { PgSQLArchive } from "../../PgSQLArchive";
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 

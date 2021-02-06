@@ -1,5 +1,5 @@
-import { ComparableValues, FilterComparison, IFilterQuery, implementsFilterComparison, isFilterComparisonArray } from "auria-clerk";
-import { PropertyComparison } from "auria-clerk/dist/property/comparison/PropertyComparison";
+import { ComparableValues, FilterComparison, IFilterQuery, implementsFilterComparison, isFilterComparisonArray } from "clerk";
+import { PropertyComparison } from '../../../auria-clerk/dist/Clerk';
 import { GeneratedQuerySQL } from "../PgSQLArchive";
 
 type FilterParams = {
@@ -183,14 +183,14 @@ function IFilterQuery(filter: IFilterQuery, params: FilterParams) {
 
     if (name === '$or') {
       filters.push(
-        '( ' + (filtered as string[])
+        '( ' + (filtered as unknown as string[])
           .map(f => `(${f})`)
           .join(' OR ') + ' )'
       );
     } else if (name === '$not') {
       filters.push(
         ' NOT (' +
-        (filtered as string[])
+        (filtered as unknown as string[])
           .map(f => `(${f})`)
           .join(' AND ')
         + ') '

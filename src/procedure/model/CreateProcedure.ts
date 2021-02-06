@@ -1,4 +1,4 @@
-import { AppError, ComparableValues, IModelProcedure } from 'auria-clerk';
+import { AppError, ComparableValues, IModelProcedure } from 'clerk';
 import { PgSQLArchive } from '../../PgSQLArchive';
 import { IPgSQLModelProcedureResponse } from './IPgSQLModelProcedureResponse';
 
